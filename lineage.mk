@@ -16,8 +16,8 @@
 
 $(call inherit-product, device/samsung/lentislte/full_lentislte.mk)
 
-# Inherit common CM phone.
-$(call inherit-product, vendor/cm/config/common_full_phone.mk)
+# Inherit common Lineage phone.
+$(call inherit-product, vendor/lineage/config/common_full_phone.mk)
 
 PRODUCT_DEVICE := lentislte
 PRODUCT_NAME := lineage_lentislte
