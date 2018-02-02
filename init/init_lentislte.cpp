@@ -33,6 +33,8 @@
 
 #include "vendor_init.h"
 #include "property_service.h"
+#include <cutils/properties.h>
+#include <android-base/logging.h>
 #include "log.h"
 #include "util.h"
 
@@ -64,11 +66,14 @@ const char *device[3] =  {
 
 void init_target_properties()
 {
-    std::string platform = property_get("ro.board.platform");
+    char prop_value[PROP_VALUE_MAX];
+    property_get("ro.board.platform", prop_value, "");
+    std::string platform = prop_value;
     if (platform != ANDROID_TARGET)
         return;
 
-    std::string bootloader = property_get("ro.bootloader");
+    property_get("ro.bootloader", prop_value, "");
+    std::string bootloader = prop_value;
 
     int idx = 0;
 
@@ -79,14 +84,14 @@ void init_target_properties()
     else if (bootloader.find("G906L") == 0)	/* LGT */
 	idx = 2;
     else
-	ERROR("Setting product info FAILED\n");
+	LOG(ERROR) << "Setting product info FAILED\n";
 
     property_override("ro.build.fingerprint", fingerprint[idx]);
     property_override("ro.build.description", description[idx]);
     property_override("ro.product.model", model[idx]);
     property_override("ro.product.device", device[idx]);
 
-    std::string device = property_get("ro.product.device");
-    INFO("Found bootloader id %s setting build properties for %s device\n",
-	 bootloader.c_str(), device.c_str());
+    property_get("ro.product.device", prop_value, "");
+    std::string device = prop_value;
+    LOG(INFO) << "Found bootloader id %s setting build properties for %s device\n", bootloader.c_str(), device.c_str();
 }
