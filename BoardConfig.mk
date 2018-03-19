@@ -19,6 +19,8 @@ TARGET_OTA_ASSERT_DEVICE := lentislteskt,lentisltektt,lentisltelgt,lentislte
 
 LENTISLTE_PATH := device/samsung/lentislte
 
+TARGET_SYSTEM_PROP += $(LENTISLTE_PATH)/system.prop
+
 # Bluetooth
 BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := $(LENTISLTE_PATH)/bluetooth  $(COMMON_PATH)/bluetooth
 
