@@ -1,5 +1,5 @@
 /*
-   Copyright (c) 2017, The LineageOS Project. All rights reserved.
+   Copyright (c) 2017-2018, The LineageOS Project. All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are
@@ -86,10 +86,16 @@ void init_target_properties()
     else
 	LOG(ERROR) << "Setting product info FAILED\n";
 
-    property_override("ro.build.fingerprint", fingerprint[idx]);
     property_override("ro.build.description", description[idx]);
-    property_override("ro.product.model", model[idx]);
-    property_override("ro.product.device", device[idx]);
+    property_override_dual("ro.build.fingerprint",
+			   "ro.vendor.build.fingerprint",
+			   fingerprint[idx]);
+    property_override_dual("ro.product.model",
+			   "ro.vendor.product.model",
+			   model[idx]);
+    property_override_dual("ro.product.device",
+			   "ro.vendor.product.device",
+			   device[idx]);
 
     property_get("ro.product.device", prop_value, "");
     std::string device = prop_value;
