@@ -35,7 +35,5 @@ TARGET_BOOTANIMATION_HALF_RES := true
 # The recovery partition is too small for xxxhdpi images
 TARGET_RECOVERY_DENSITY := xxhdpi
 
-$(call inherit-product, frameworks/native/build/phone-xxhdpi-2048-dalvik-heap.mk)
-
 # common apq8084
 $(call inherit-product, device/samsung/apq8084-common/apq8084.mk)
