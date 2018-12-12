@@ -36,7 +36,6 @@
 #include <cutils/properties.h>
 #include <android-base/logging.h>
 #include "log.h"
-#include "util.h"
 
 #include "init_apq8084.h"
 
