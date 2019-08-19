@@ -47,7 +47,7 @@
 using android::base::GetProperty;
 using android::base::ReadFileToString;
 using android::base::Trim;
-using android::init::property_set;
+using android::base::SetProperty;
 
 // copied from build/tools/releasetools/ota_from_target_files.py
 // but with "." at the end and empty entry
@@ -73,8 +73,8 @@ void property_override(char const prop[], char const value[], bool add = true)
 
 void gsm_properties()
 {
-    property_set("telephony.lteOnGsmDevice", "1");
-    property_set("ro.telephony.default_network", "9");
+    SetProperty("telephony.lteOnGsmDevice", "1");
+    SetProperty("ro.telephony.default_network", "9");
 }
 
 void cdma_properties(char const *operator_alpha,
@@ -82,14 +82,14 @@ void cdma_properties(char const *operator_alpha,
                      char const *cdma_sub)
 {
     /* Dynamic CDMA Properties */
-    property_set("ro.cdma.home.operator.alpha", operator_alpha);
-    property_set("ro.cdma.home.operator.numeric", operator_numeric);
-    property_set("ro.telephony.default_cdma_sub", cdma_sub);
+    SetProperty("ro.cdma.home.operator.alpha", operator_alpha);
+    SetProperty("ro.cdma.home.operator.numeric", operator_numeric);
+    SetProperty("ro.telephony.default_cdma_sub", cdma_sub);
 
     /* Static CDMA Properties */
-    property_set("ril.subscription.types", "NV,RUIM");
-    property_set("ro.telephony.default_network", "10");
-    property_set("telephony.lteOnCdmaDevice", "1");
+    SetProperty("ril.subscription.types", "NV,RUIM");
+    SetProperty("ro.telephony.default_network", "10");
+    SetProperty("telephony.lteOnCdmaDevice", "1");
 }
 
 void vendor_load_properties()
