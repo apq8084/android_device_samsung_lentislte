@@ -14,10 +14,10 @@
 # limitations under the License.
 #
 
-ifneq ($(RR_BUILD),)
-    PRODUCT_MAKEFILES += \
-        $(LOCAL_DIR)/rr_lentislte.mk
-else
-    PRODUCT_MAKEFILES += \
-        $(LOCAL_DIR)/lineage_lentislte.mk
-endif
+PRODUCT_MAKEFILES += \
+    $(LOCAL_DIR)/lineage_lentislte.mk
+
+COMMON_LUNCH_CHOICES := \
+    lineage_lentislte-user \
+    lineage_lentislte-userdebug \
+    lineage_lentislte-eng
