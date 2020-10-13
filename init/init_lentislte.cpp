@@ -1,6 +1,6 @@
 /*
-   Copyright (c) 2017-2018, The LineageOS Project. All rights reserved.
-
+   Copyright (c) 2016, The Linux Foundation. All rights reserved.
+   Copyright (c) 2017-2020, The LineageOS Project. All rights reserved.
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are
    met:
@@ -13,7 +13,6 @@
     * Neither the name of The Linux Foundation nor the names of its
       contributors may be used to endorse or promote products derived
       from this software without specific prior written permission.
-
    THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
    WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
@@ -27,76 +26,116 @@
    IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #define _REALLY_INCLUDE_SYS__SYSTEM_PROPERTIES_H_
 #include <sys/_system_properties.h>
 
-#include "vendor_init.h"
-#include "property_service.h"
-#include <cutils/properties.h>
+#include <android-base/file.h>
 #include <android-base/logging.h>
-#include "log.h"
+#include <android-base/properties.h>
+#include <android-base/strings.h>
 
-#include "init_apq8084.h"
+#include "property_service.h"
+#include "vendor_init.h"
 
-const char *fingerprint[3] = {
-  "samsung/lentislteskt/lentislteskt:6.0.1/MMB29M/G906SKSU1CPL1:user/release-keys",
-  "samsung/lentisltektt/lentisltektt:6.0.1/MMB29M/G906KKTU1CPL1:user/release-keys",
-  "samsung/lentisltelgt/lentisltelgt:6.0.1/MMB29M/G906LKLU1CPL2:user/release-keys"
+using android::base::GetProperty;
+using android::base::ReadFileToString;
+using android::base::Trim;
+using android::init::property_set;
+
+// copied from build/tools/releasetools/ota_from_target_files.py
+// but with "." at the end and empty entry
+std::vector<std::string> ro_product_props_default_source_order = {
+    "",
+    "product.",
+    "product_services.",
+    "odm.",
+    "vendor.",
+    "system.",
 };
 
-const char *description[3] = {
-  "lentislteskt-user 6.0.1 MMB29M G906SKSU1CPL1 release-keys",
-  "lentisltektt-user 6.0.1 MMB29M G906KKTU1CPL1 release-keys",
-  "lentisltelgt-user 6.0.1 MMB29M G906LKLU1CPL2 release-keys"
-};
-
-const char *model[3] = {
-  "SM-G906S",
-  "SM-G906K",
-  "SM-G906L"
-};
-
-const char *device[3] =  {
-  "lentislteskt",
-  "lentisltektt",
-  "lentisltelgt"
-};
-
-void init_target_properties()
+void property_override(char const prop[], char const value[], bool add = true)
 {
-    char prop_value[PROP_VALUE_MAX];
-    property_get("ro.board.platform", prop_value, "");
-    std::string platform = prop_value;
-    if (platform != ANDROID_TARGET)
-        return;
+    auto pi = (prop_info *) __system_property_find(prop);
 
-    property_get("ro.bootloader", prop_value, "");
-    std::string bootloader = prop_value;
+    if (pi != nullptr) {
+        __system_property_update(pi, value, strlen(value));
+    } else if (add) {
+        __system_property_add(prop, strlen(prop), value, strlen(value));
+    }
+}
 
-    int idx = 0;
+void gsm_properties()
+{
+    property_set("telephony.lteOnGsmDevice", "1");
+    property_set("ro.telephony.default_network", "9");
+}
 
-    if (bootloader.find("G906S") == 0)		/* SKT */
-	idx = 0;
-    else if (bootloader.find("G906K") == 0)	/* KTT */
-	idx = 1;
-    else if (bootloader.find("G906L") == 0)	/* LGT */
-	idx = 2;
-    else
-	LOG(ERROR) << "Setting product info FAILED\n";
+void cdma_properties(char const *operator_alpha,
+                     char const *operator_numeric,
+                     char const *cdma_sub)
+{
+    /* Dynamic CDMA Properties */
+    property_set("ro.cdma.home.operator.alpha", operator_alpha);
+    property_set("ro.cdma.home.operator.numeric", operator_numeric);
+    property_set("ro.telephony.default_cdma_sub", cdma_sub);
 
-    property_override("ro.build.description", description[idx]);
-    property_override_dual("ro.build.fingerprint",
-			   "ro.vendor.build.fingerprint",
-			   fingerprint[idx]);
-    property_override_dual("ro.product.model",
-			   "ro.vendor.product.model",
-			   model[idx]);
-    property_override_dual("ro.product.device",
-			   "ro.vendor.product.device",
-			   device[idx]);
+    /* Static CDMA Properties */
+    property_set("ril.subscription.types", "NV,RUIM");
+    property_set("ro.telephony.default_network", "10");
+    property_set("telephony.lteOnCdmaDevice", "1");
+}
 
-    property_get("ro.product.device", prop_value, "");
-    std::string device = prop_value;
-    LOG(INFO) << "Found bootloader id %s setting build properties for %s device\n", bootloader.c_str(), device.c_str();
+void vendor_load_properties()
+{
+    std::string bootloader = GetProperty("ro.bootloader", "");
+
+    const auto set_ro_product_prop = [](const std::string &source,
+            const std::string &prop, const std::string &value) {
+        auto prop_name = "ro.product." + source + prop;
+        property_override(prop_name.c_str(), value.c_str(), false);
+    };
+
+    if (bootloader.find("G906S") == 0) {
+        /* SKT */
+        for (const auto &source : ro_product_props_default_source_order) {
+            set_ro_product_prop(source, "fingerprint", "samsung/lentislteskt/lentislteskt:6.0.1/MMB29M/G906SKSU1CPL1:user/release-keys");
+            set_ro_product_prop(source, "model", "SM-G906S");
+            set_ro_product_prop(source, "device", "lentislteskt");
+            set_ro_product_prop(source, "name", "lentislteskt");
+        }
+        property_override("ro.build.description", "lentislteskt-user 6.0.1 MMB29M G906SKSU1CPL1 release-keys");
+        gsm_properties();
+    } else if (bootloader.find("G906K") == 0) {
+        /* KTT */
+        for (const auto &source : ro_product_props_default_source_order) {
+            set_ro_product_prop(source, "fingerprint", "samsung/lentisltektt/lentisltektt:6.0.1/MMB29M/G906KKTU1CPL1:user/release-keys");
+            set_ro_product_prop(source, "model", "SM-G906K");
+            set_ro_product_prop(source, "device", "lentisltektt");
+            set_ro_product_prop(source, "name", "lentisltektt");
+        }
+        property_override("ro.build.description", "lentisltektt-user 6.0.1 MMB29M G906KKTU1CPL1 release-keys");
+        gsm_properties();
+    } else if (bootloader.find("G906L") == 0) {
+        /* LGT */
+        for (const auto &source : ro_product_props_default_source_order) {
+            set_ro_product_prop(source, "fingerprint", "samsung/lentisltelgt/lentisltelgt:6.0.1/MMB29M/G906LKLU1CPL2:user/release-keys");
+            set_ro_product_prop(source, "model", "SM-G906L");
+            set_ro_product_prop(source, "device", "lentisltelgt");
+            set_ro_product_prop(source, "name", "lentisltelgt");
+        }
+        property_override("ro.build.description", "lentisltelgt-user 6.0.1 MMB29M G906LKLU1CPL2 release-keys");
+        gsm_properties();
+    } else {
+        gsm_properties();
+    }
+
+    std::string device = GetProperty("ro.product.device", "");
+    LOG(ERROR) << "Found bootloader id " << bootloader << " setting build properties for " << device << " device" << std::endl;
 }
