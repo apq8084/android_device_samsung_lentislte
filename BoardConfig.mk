@@ -24,6 +24,9 @@ TARGET_SYSTEM_PROP += $(LENTISLTE_PATH)/system.prop
 # Bluetooth
 BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := $(LENTISLTE_PATH)/bluetooth  $(COMMON_PATH)/bluetooth
 
+# Fingerprint
+BUILD_FINGERPRINT := samsung/lentislteskt/lentislteskt:6.0.1/MMB29M/G906SKSU1CPL1:user/release-keys
+
 # Kernel
 BOARD_MKBOOTIMG_ARGS := --ramdisk_offset 0x02600000 --tags_offset 0x02400000 --second_offset 0x00f00000
 TARGET_KERNEL_VARIANT_CONFIG := apq8084_sec_lentislte_skt_defconfig
